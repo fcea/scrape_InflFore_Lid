@@ -30,6 +30,46 @@ def create_Table_Productos(name):
 				  	PrecioNormal INT)")
 	con.close()
 
+def lets_Scrape_Non_Supermarket(url, fecha_ejec, tableName):
+	driver = webdriver.Firefox()
+	driver.get(url)
+	links = driver.find_elements_by_css_selector(".cursorpointer.alertCheck")
+	linksTmp =[]
+	nombresTmp = []
+	cont=0
+	for ref in links:
+		temp = ref.get_attribute("outerHTML").encode('utf-8').strip()
+		if temp.find("productList") > 0:
+			linksTmp.append("http://www.lider.cl" + get_Link(temp))
+			nombresTmp.append(str(cont) + "|" + ref.get_attribute("innerHTML").encode('utf-8').strip())
+			cont=cont +1
+
+	print len(linksTmp)
+	print len(nombresTmp)
+	driver.close()
+	sys.exit(0)
+
+	cont = 0
+	
+
+
+
+	#busco id categoria del link mas alta ingresada, asigno el valor al contador e itero desde ese punto
+	cont = data_Inserted(tableName)
+	while cont < len(linksTmp):
+		print "Ejecuto es " + nombresTmp[cont]
+		resuPart = get_info_Supermarket(driver, linksTmp[cont], fecha_ejec, nombresTmp[cont], tableName) #recupero 7 elementos a insertar, falta la fecha, categoria y cod_cate, pero estan ya aca
+		cont = cont + 1 
+	driver.close()
+
+
+
+
+
+
+
+
+
 #METODO QUE COORDINA EL SCRAPING DE TODO EL SITIO WEB
 #RECORRE LOS LINKS, DETERMINA LOS QUE SIRVEN. 
 #DE LOS QUE SIRVEN VERIFICA CUALES AUN NO HAN SIDO VISITADOS
@@ -189,4 +229,6 @@ if __name__ == '__main__':
 	LiderSupermarket =  d_name + '_Lider_Supermarket'
 	create_Table_Productos(LiderSupermarket)
 	#ejecuto el proceso 
-	lets_Scrape_Supermarket('http://www.lider.cl/dys/',d,LiderSupermarket)
+	#lets_Scrape_Supermarket('http://www.lider.cl/dys/',d,LiderSupermarket)
+	lets_Scrape_Non_Supermarket('http://www.lider.cl/dys/catalog/category.jsp?id=CAT_GM_00096&amp;navAction=jump&amp;navCount=0',d,LiderSupermarket)
+
