@@ -13,7 +13,7 @@ import random
 
 #METODO QUE CREA LA TABLA SQL  EN CASO DE QUE NO EXISTA
 def create_Table_Productos(name):
-	con = mdb.connect('localhost', 'root', 'password', 'LiderWebscraping2');
+	con = mdb.connect('localhost', 'root', 'password', 'LiderWebscraping');
 	with con:
 
 	    cur = con.cursor()
@@ -78,7 +78,7 @@ def modify_Prices(formPrice):
 #METODO QUE SIRVE PARA VERIFICAR EL ULTIMO DATO INSERTADO EN LA TABLA SQL
 #RETORNA 0 SI LA TABLA ESTA VACIA. DE LO CONTRARIO RETORNA EL CODIGO MAS ALTO INGRESADO.
 def data_Inserted(tableName):
-	con = mdb.connect('localhost', 'root', 'password', 'LiderWebscraping2');
+	con = mdb.connect('localhost', 'root', 'password', 'LiderWebscraping');
 	with con:
 
 	    cur = con.cursor()
@@ -102,7 +102,7 @@ def get_Link(unfText):
 #METODO QUE HACE EL INSERT DENTRO DE LA TABLA SQL
 
 def word_to_SQL_insertion(concatString, tableName):
-	con = mdb.connect('localhost', 'root', 'password', 'LiderWebscraping2');
+	con = mdb.connect('localhost', 'root', 'password', 'LiderWebscraping');
 	with con:
 	    cur = con.cursor()
 	    if cur.execute("SELECT * FROM "+tableName+" WHERE SKU=%s",concatString.split("|")[0]) == 0:
