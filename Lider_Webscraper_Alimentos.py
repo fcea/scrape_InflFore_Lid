@@ -13,7 +13,7 @@ import random
 
 #METODO QUE CREA LA TABLA SQL  EN CASO DE QUE NO EXISTA
 def create_Table_Productos(name):
-	con = mdb.connect('localhost', 'root', 'password', 'LiderWebscraping');
+	con = mdb.connect('localhost', 'root', 'password', 'LiderWebscraping2');
 	with con:
 
 	    cur = con.cursor()
@@ -78,7 +78,7 @@ def modify_Prices(formPrice):
 #METODO QUE SIRVE PARA VERIFICAR EL ULTIMO DATO INSERTADO EN LA TABLA SQL
 #RETORNA 0 SI LA TABLA ESTA VACIA. DE LO CONTRARIO RETORNA EL CODIGO MAS ALTO INGRESADO.
 def data_Inserted(tableName):
-	con = mdb.connect('localhost', 'root', 'password', 'LiderWebscraping');
+	con = mdb.connect('localhost', 'root', 'password', 'LiderWebscraping2');
 	with con:
 
 	    cur = con.cursor()
@@ -102,7 +102,7 @@ def get_Link(unfText):
 #METODO QUE HACE EL INSERT DENTRO DE LA TABLA SQL
 
 def word_to_SQL_insertion(concatString, tableName):
-	con = mdb.connect('localhost', 'root', 'password', 'LiderWebscraping');
+	con = mdb.connect('localhost', 'root', 'password', 'LiderWebscraping2');
 	with con:
 	    cur = con.cursor()
 	    if cur.execute("SELECT * FROM "+tableName+" WHERE SKU=%s",concatString.split("|")[0]) == 0:
@@ -125,41 +125,48 @@ def get_Seven_Data(ele1):
 	#info[4] -> carro de compras
 	#info[5] -> solo los productos que estan disponibles
 	#De este modo, obtengo la marca y el detalle
-	marcaDirt = info[1].get_attribute("innerHTML").encode('utf-8').strip()
-	marcaProd = marcaDirt[marcaDirt.find(">")+1:marcaDirt.find("<",marcaDirt.find(">"))]
-	detalleProd = info[2].get_attribute("innerHTML").encode('utf-8').strip()
-	#La existencia de la clase bloqueada me indica si el producto esta actualmente disponible.
 	try:
-		availInd = ele1.find_element_by_class_name("ech_form_disabledDiv").get_attribute("innerHTML").encode('utf-8').strip()
-		availInd = 0
+		marcaDirt = info[1].get_attribute("innerHTML").encode('utf-8').strip()
+		exist =1
 	except:
-		availInd = 1
-	try:
-		tiposPrecios = ele1.find_elements_by_class_name("retail")
-		if len(tiposPrecios)==0: #significa que hay solo precio primario
+		exist = 0
+	if exist == 1:
+		marcaProd = marcaDirt[marcaDirt.find(">")+1:marcaDirt.find("<",marcaDirt.find(">"))]
+		detalleProd = info[2].get_attribute("innerHTML").encode('utf-8').strip()
+		#La existencia de la clase bloqueada me indica si el producto esta actualmente disponible.
+		try:
+			availInd = ele1.find_element_by_class_name("ech_form_disabledDiv").get_attribute("innerHTML").encode('utf-8').strip()
+			availInd = 0
+		except:
+			availInd = 1
+		try:
+			tiposPrecios = ele1.find_elements_by_class_name("retail")
+			if len(tiposPrecios)==0: #significa que hay solo precio primario
+				mainPrice =   modify_Prices(ele1.find_element_by_class_name("price").get_attribute("innerHTML").encode('utf-8').strip())
+				granelPrice = modify_Prices(ele1.find_element_by_class_name("price").get_attribute("innerHTML").encode('utf-8').strip())
+				normalPrice = modify_Prices(ele1.find_element_by_class_name("price").get_attribute("innerHTML").encode('utf-8').strip())
+			elif len(tiposPrecios)==1: #significa que hay precio primario y precio granel
+				auxPrice=tiposPrecios[0].get_attribute("innerHTML").encode('utf-8').strip()
+				mainPrice =   modify_Prices(ele1.find_element_by_class_name("price").get_attribute("innerHTML").encode('utf-8').strip())
+				granelPrice = modify_Prices(re.findall('\${1}\s*[\.0-9]{1,10}\s*', auxPrice)[0]).strip()
+				normalPrice = modify_Prices(re.findall('\${1}\s*[\.0-9]{1,10}\s*', auxPrice)[0]).strip()
+			elif len(tiposPrecios)==2: #significa que hay precio primario, granel y normal (ergo el primario esta en oferta)
+				#el precio no lo puedo sacar directamente, tengo que hacer un parser manual sobre el texto outer completo
+				hiddenPrice = ele1.get_attribute("outerHTML").encode('utf-8').strip().split('<small class="retail">')
+				maskedPrice = tiposPrecios[1].get_attribute("outerHTML").encode('utf-8').strip()
+				mainPrice =   modify_Prices(ele1.find_element_by_class_name("price").get_attribute("innerHTML").encode('utf-8').strip())
+				granelPrice = modify_Prices(re.findall('\${1}\s*[\.0-9]{1,10}\s*', maskedPrice)[0]).strip()
+				normalPrice = modify_Prices(hiddenPrice[1][hiddenPrice[1].find('$'):].strip())
+			else: #caso no determinado
+				print 'Hay un caso que no se esta capturando!'
+				sys.exit(0)
+		except: #significa que no hay ningun tag con ese nombre
 			mainPrice =   modify_Prices(ele1.find_element_by_class_name("price").get_attribute("innerHTML").encode('utf-8').strip())
 			granelPrice = modify_Prices(ele1.find_element_by_class_name("price").get_attribute("innerHTML").encode('utf-8').strip())
 			normalPrice = modify_Prices(ele1.find_element_by_class_name("price").get_attribute("innerHTML").encode('utf-8').strip())
-		elif len(tiposPrecios)==1: #significa que hay precio primario y precio granel
-			auxPrice=tiposPrecios[0].get_attribute("innerHTML").encode('utf-8').strip()
-			mainPrice =   modify_Prices(ele1.find_element_by_class_name("price").get_attribute("innerHTML").encode('utf-8').strip())
-			granelPrice = modify_Prices(re.findall('\${1}\s*[\.0-9]{1,10}\s*', auxPrice)[0]).strip()
-			normalPrice = modify_Prices(re.findall('\${1}\s*[\.0-9]{1,10}\s*', auxPrice)[0]).strip()
-		elif len(tiposPrecios)==2: #significa que hay precio primario, granel y normal (ergo el primario esta en oferta)
-			#el precio no lo puedo sacar directamente, tengo que hacer un parser manual sobre el texto outer completo
-			hiddenPrice = ele1.get_attribute("outerHTML").encode('utf-8').strip().split('<small class="retail">')
-			maskedPrice = tiposPrecios[1].get_attribute("outerHTML").encode('utf-8').strip()
-			mainPrice =   modify_Prices(ele1.find_element_by_class_name("price").get_attribute("innerHTML").encode('utf-8').strip())
-			granelPrice = modify_Prices(re.findall('\${1}\s*[\.0-9]{1,10}\s*', maskedPrice)[0]).strip()
-			normalPrice = modify_Prices(hiddenPrice[1][hiddenPrice[1].find('$'):].strip())
-		else: #caso no determinado
-			print 'Hay un caso que no se esta capturando!'
-			sys.exit(0)
-	except: #significa que no hay ningun tag con ese nombre
-		mainPrice =   modify_Prices(ele1.find_element_by_class_name("price").get_attribute("innerHTML").encode('utf-8').strip())
-		granelPrice = modify_Prices(ele1.find_element_by_class_name("price").get_attribute("innerHTML").encode('utf-8').strip())
-		normalPrice = modify_Prices(ele1.find_element_by_class_name("price").get_attribute("innerHTML").encode('utf-8').strip())
-	return  [skuProd , marcaProd, detalleProd, availInd, mainPrice, granelPrice, normalPrice ]
+		return  [skuProd , marcaProd, detalleProd, availInd, mainPrice, granelPrice, normalPrice]
+	else:
+		return [0]
 
 
 
@@ -188,23 +195,31 @@ def get_info_Supermarket(driver, urls, fecha_ejec, doubleParam, tableName):
 
 	for ele1 in elementfeat:
 		retorno = get_Seven_Data(ele1)
-		#Proceso los parametros que no tengo
-		codeCategory = doubleParam.split("|")[0]
-		nameCategory = doubleParam.split("|")[1]
-		#Hago el llamado a la funcion que inserta en la base de datos
-		inputSQL =retorno[0] +"|"+ nameCategory +"|"+ str(codeCategory) +"|"+ retorno[1] +"|"+ retorno[2] +"|"+ fecha_ejec +"|"+ str(retorno[3]) +"|"+ str(retorno[4]) +"|"+ str(retorno[5]) +"|"+ str(retorno[6])
-		word_to_SQL_insertion(inputSQL, tableName)
+		#Es 0 solo en el caso que haya grilla pero no producto
+		if retorno[0]  != 0:
+			#Proceso los parametros que no tengo
+			codeCategory = doubleParam.split("|")[0]
+			nameCategory = doubleParam.split("|")[1]
+			#Hago el llamado a la funcion que inserta en la base de datos
+			inputSQL =retorno[0] +"|"+ nameCategory +"|"+ str(codeCategory) +"|"+ retorno[1] +"|"+ retorno[2] +"|"+ fecha_ejec +"|"+ str(retorno[3]) +"|"+ str(retorno[4]) +"|"+ str(retorno[5]) +"|"+ str(retorno[6])
+			word_to_SQL_insertion(inputSQL, tableName)
+		else:
+			pass
 
 	#Para productos no featured
 
 	for ele1 in elementemp:
 		retorno = get_Seven_Data(ele1)
-		#Proceso los parametros que no tengo
-		codeCategory = doubleParam.split("|")[0]
-		nameCategory = doubleParam.split("|")[1]
-		#Hago el llamado a la funcion que inserta en la base de datos
-		inputSQL =retorno[0] +"|"+ nameCategory +"|"+ str(codeCategory) +"|"+ retorno[1] +"|"+ retorno[2] +"|"+ fecha_ejec +"|"+ str(retorno[3]) +"|"+ str(retorno[4]) +"|"+ str(retorno[5]) +"|"+ str(retorno[6])
-		word_to_SQL_insertion(inputSQL, tableName)
+		#Es 0 solo en el caso que haya grilla pero no producto
+		if retorno[0]  != 0:
+			#Proceso los parametros que no tengo
+			codeCategory = doubleParam.split("|")[0]
+			nameCategory = doubleParam.split("|")[1]
+			#Hago el llamado a la funcion que inserta en la base de datos
+			inputSQL =retorno[0] +"|"+ nameCategory +"|"+ str(codeCategory) +"|"+ retorno[1] +"|"+ retorno[2] +"|"+ fecha_ejec +"|"+ str(retorno[3]) +"|"+ str(retorno[4]) +"|"+ str(retorno[5]) +"|"+ str(retorno[6])
+			word_to_SQL_insertion(inputSQL, tableName)
+		else:
+			pass
 	#driver.close()
 	return
 
